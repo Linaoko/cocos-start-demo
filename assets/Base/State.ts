@@ -10,6 +10,9 @@ import ResourceManager from "../Runtime/ResourceManager";
 const ANIMATION_SPEED = 1/8
 
 export default class State{
+
+   private animationClip: AnimationClip
+
   constructor(
     private fsm:PlayerStateMachine,
     private path : string,
@@ -21,12 +24,11 @@ export default class State{
 async  init(){
 
 
-        const spriteFrames =  await ResourceManager.Instance.loadDir(this.path)
-
-
+        const promise = ResourceManager.Instance.loadDir(this.path)
+        this.fsm.waitingList.push(promise)
+        const spriteFrames = await promise
 
         const animationClip = new AnimationClip();
-
 
         const track  = new animation.ObjectTrack(); // 创建一个向量轨道
 
@@ -35,17 +37,17 @@ async  init(){
 
         track.channel.curve.assignSorted(frames);
 
-    // 最后将轨道添加到动画剪辑以应用
+        // 最后将轨道添加到动画剪辑以应用
         animationClip.addTrack(track);
-
         animationClip.duration = frames.length * ANIMATION_SPEED; // 整个动画剪辑的周期
-        animationClip.wrapMode = AnimationClip.WrapMode.Loop
-        animationComponent.defaultClip = animationClip
-        animationComponent.play()
+        animationClip.wrapMode = this.wrapMode
+        this.animationClip = animationClip;
+
   }
 
   run(){
-     animationComponent.defaultClip = animationClip
-     animationComponent.play()
+
+     this.fsm.animationComponent.defaultClip = this.animationClip
+     this.fsm.animationComponent.play()
   }
 }

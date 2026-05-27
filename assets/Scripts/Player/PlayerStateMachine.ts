@@ -1,10 +1,10 @@
-import { _decorator, AnimationClip, Component, Node } from 'cc';
+import { _decorator, AnimationClip, Component, Animation, SpriteFrame, Sprite } from 'cc';
 import { FSM_PARAMS_TYPE_ENUM, PARAME_NAME_ENUM } from '../../Enums';
 import State from '../../Base/State';
+
 const { ccclass, property } = _decorator;
 
 type ParamsValueType = boolean | number
-animationComponent:Animation
 
 export interface IParamsValue{
   type:FSM_PARAMS_TYPE_ENUM
@@ -18,9 +18,11 @@ export const getInitParamsTrigger =()=>{
 @ccclass('PlayerStateMachine')
 export class PlayerStateMachine extends Component {
   private _currenState : State = null
-
   params:Map<string,IParamsValue> = new Map()
   stateMachines:Map<string,State> = new Map()
+  animationComponent:Animation
+  waitingList:Array<Promise<SpriteFrame[]>> = []
+
 
   getParams(paramsName:string){
     if(this.params.has(paramsName)){
@@ -30,7 +32,7 @@ export class PlayerStateMachine extends Component {
 
   setParams(paramsName:string,value:ParamsValueType){
     if(this.params.has(paramsName)){
-      return this.params.get(paramsName).value = value
+      this.params.get(paramsName).value = value
       this.run()
     }
   }
@@ -45,11 +47,15 @@ export class PlayerStateMachine extends Component {
   }
 
 
-  init(){
+  async init(){
+
+    this.animationComponent = this.addComponent(Animation)
+
     this.initParams()
+
     this.initStateMachines()
 
-    this animationComponent = this.addComponent(Animation)
+    await Promise.all(this.waitingList)
   }
 
   initParams(){
@@ -59,7 +65,7 @@ export class PlayerStateMachine extends Component {
 
   initStateMachines(){
     this.stateMachines.set(PARAME_NAME_ENUM.IDLE,new State(this,"texture/player/idle/top",AnimationClip.WrapMode.Loop))
-    this.stateMachines.set(PARAME_NAME_ENUM.TURNLEFT,new State(this,"texture/player/idle/top"))
+    this.stateMachines.set(PARAME_NAME_ENUM.TURNLEFT,new State(this,"texture/player/turnleft/top"))
   }
 
   run(){
